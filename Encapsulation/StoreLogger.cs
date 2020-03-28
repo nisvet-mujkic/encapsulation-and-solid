@@ -1,32 +1,42 @@
 ﻿using Serilog;
+using System.Linq;
 
 namespace Encapsulation
 {
-    public class StoreLogger
+    public class StoreLogger : IStoreWriter, IStoreReader
     {
-        public virtual void Saving(int id)
+        private readonly ILogger _logger;
+        private readonly IStoreWriter _writer;
+        private readonly IStoreReader _reader;
+
+        public StoreLogger(ILogger logger, IStoreWriter writer, IStoreReader reader)
         {
-            Log.Information($"Saving message {id}.");
+            _logger = logger;
+            _writer = writer;
+            _reader = reader;
         }
 
-        public virtual void Saved(int id)
+        public void Save(int id, string message)
         {
-            Log.Information($"Saved message {id}.");
+            _logger.Information($"Saving message {id}.");
+            _writer.Save(id, message);
+            _logger.Information($"Saved message {id}.");
         }
 
-        public virtual void Reading(int id)
+        public Maybe<string> Read(int id)
         {
-            Log.Debug($"Reading message {id}.");
-        }
+            _logger.Debug($"Reading message {id}");
+            var returnValue = _reader.Read(id);
+            if (returnValue.Any())
+            {
+                _logger.Debug($"Returning message {id}");
+            }
+            else
+            {
+                _logger.Debug($"No message {id} found");
+            }
 
-        public virtual void DidNotFind(int id)
-        {
-            Log.Debug($"No message {id} found.");
-        }
-
-        public virtual void Returning(int id)
-        {
-            Log.Debug($"Returning message {id}.");
+            return returnValue;
         }
     }
 }

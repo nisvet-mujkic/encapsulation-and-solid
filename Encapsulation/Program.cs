@@ -1,5 +1,5 @@
-﻿using System;
-using System.Linq;
+﻿using Serilog;
+using System;
 using System.IO;
 
 namespace Encapsulation
@@ -8,9 +8,11 @@ namespace Encapsulation
     {
         static void Main(string[] args)
         {
-            var messageStore = new MessageStore(new DirectoryInfo(@"C:\Users\Nisvet\Desktop\docs"));
-
-            messageStore.Save(22, "ja sa nisvet");
+            var logger = new LoggerConfiguration().CreateLogger();
+            var fileStore = new FileStore(new DirectoryInfo(Environment.CurrentDirectory));
+            var cache = new StoreCache(fileStore, fileStore);
+            var log = new StoreLogger(logger, cache, cache);
+            var messageStore = new MessageStore(log, log, fileStore);
         }
     }
 }

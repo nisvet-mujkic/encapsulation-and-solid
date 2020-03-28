@@ -1,74 +1,34 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
-using System.Linq;
 
 namespace Encapsulation
 {
     public class MessageStore
     {
-        private readonly StoreCache _cache;
-        private readonly StoreLogger _logger;
-        private readonly IStore _store;
+        private readonly IFileLocator _fileLocator;
+        private readonly IStoreWriter _writer;
+        private readonly IStoreReader _reader;
 
-        public MessageStore(DirectoryInfo workingDirectory)
+        public MessageStore(IStoreWriter writer, IStoreReader reader, IFileLocator fileLocator)
         {
-            _cache = new StoreCache();
-            _logger = new StoreLogger();
-            _store = new FileStore(workingDirectory);
+            _writer = writer ?? throw new ArgumentNullException();
+            _reader = reader ?? throw new ArgumentNullException();
+            _fileLocator = fileLocator ?? throw new ArgumentNullException();
         }
-
-        public DirectoryInfo WorkingDirectory { get; }
 
         public void Save(int id, string message)
         {
-            Logger.Saving(id);
-            Store.WriteAllText(id, message);
-            Cache.AddOrUpdate(id, message);
-            Logger.Saved(id);
+            _writer.Save(id, message);
         }
 
         public Maybe<string> Read(int id)
         {
-            Logger.Reading(id);
-
-            var message = Cache.GetOrAdd(id, _ => Store.ReadAllText(id));
-
-            if (message.Any())
-            {
-                Logger.Returning(id);
-            }
-            else
-            {
-                Logger.DidNotFind(id);
-            }
-
-            return message;
+            return _reader.Read(id);
         }
 
         public FileInfo GetFileInfo(int id)
         {
-            return FileLocator.GetFileInfo(id);
-        }
-
-        protected virtual IStore Store
-        {
-            get { return _store; }
-        }
-
-        protected virtual StoreCache Cache
-        {
-            get { return _cache; }
-        }
-
-        protected virtual StoreLogger Logger
-        {
-            get { return _logger; }
-        }
-
-        protected virtual IFileLocator FileLocator
-        {
-            get { return _logger; }
+            return _fileLocator.GetFileInfo(id);
         }
     }
 }
